@@ -1,6 +1,6 @@
 import { SQS } from "aws-sdk";
 import dotenv from "dotenv";
-// import { downloadS3Folder } from "./aws";
+import { downloadS3Folder } from "./aws";
 
 dotenv.config();
 
@@ -27,7 +27,9 @@ async function main() {
     await sqs
       .receiveMessage(
         {
-          QueueUrl: process.env.AWS_SQS_QUERY_URL || "",
+          QueueUrl: process.env.AWS_SQS_QUERY_URL
+            ? process.env.AWS_SQS_QUERY_URL
+            : "",
         },
         async (err, { Messages }) => {
           if (err) {
@@ -35,8 +37,7 @@ async function main() {
           }
           if (Messages && Messages[0]) {
             // download files from s3
-            // await downloadS3Folder(`output/${Messages[0].Body}`);
-            console.log(Messages[0].Body);
+            await downloadS3Folder(`output/${Messages[0].Body}`);
 
             await sqs
               .deleteMessage({
