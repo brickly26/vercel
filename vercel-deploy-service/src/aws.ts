@@ -19,7 +19,6 @@ const s3 = new S3({
 });
 
 export const downloadS3Folder = async (prefix: string) => {
-  console.log(prefix);
   const allFiles = await s3
     .listObjectsV2({
       Bucket: "vercel-burak",
@@ -53,4 +52,39 @@ export const downloadS3Folder = async (prefix: string) => {
     }) || [];
 
   await Promise.all(allPromises?.filter((x) => x !== undefined));
+};
+
+export const uploadFinalBuild = async (id: string) => {
+  const folderPath = path.join(__dirname, `output/${id}/dist`);
+  const allFiles = getAllFiles(folderPath);
+  allFiles.forEach(async (file) => {
+    await uploadFile(`dist/${id}/` + file.slice(folderPath.length + 1), file);
+  });
+};
+
+export const getAllFiles = (folderPath: string) => {
+  let response: string[] = [];
+
+  const allFilesandFolder = fs.readdirSync(folderPath);
+  allFilesandFolder.forEach((file) => {
+    const fullFolderPath = path.join(folderPath, file);
+
+    if (fs.statSync(fullFolderPath).isDirectory()) {
+      response = response.concat(getAllFiles(fullFolderPath));
+    } else {
+      response.push(fullFolderPath);
+    }
+  });
+  return response;
+};
+
+export const uploadFile = async (fileName: string, localFilePath: string) => {
+  const fileContent = fs.readFileSync(localFilePath);
+  const response = await s3
+    .upload({
+      Body: fileContent,
+      Bucket: "vercel-burak",
+      Key: fileName,
+    })
+    .promise();
 };
