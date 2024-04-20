@@ -2,6 +2,7 @@ import { SQS } from "aws-sdk";
 import dotenv from "dotenv";
 import { downloadS3Folder, uploadFinalBuild } from "./aws";
 import { buildProject } from "./utils";
+import { createClient } from "redis";
 
 dotenv.config();
 
@@ -23,6 +24,16 @@ const sqs = new SQS({
   region: "us-east-1",
 });
 
+if (!process.env.AWS_ELASTICACHE_URL) {
+  throw new Error("AWS_ELASTICACHE_URL var missing");
+}
+
+const redis = createClient({
+  url: process.env.AWS_ELASTICACHE_URL,
+});
+
+redis.connect();
+
 async function main() {
   while (true) {
     await sqs
@@ -43,6 +54,8 @@ async function main() {
             await downloadS3Folder(`output/${id}`);
             await buildProject(id);
             await uploadFinalBuild(id);
+
+            await redis.hSet("status", id, "deploy");
 
             await sqs
               .deleteMessage({
