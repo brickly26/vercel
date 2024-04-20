@@ -28,9 +28,7 @@ if (!process.env.AWS_ELASTICACHE_URL) {
   throw new Error("AWS_ELASTICACHE_URL var missing");
 }
 
-const redis = createClient({
-  url: process.env.AWS_ELASTICACHE_URL,
-});
+const redis = createClient();
 
 redis.connect();
 
@@ -55,7 +53,7 @@ async function main() {
             await buildProject(id);
             await uploadFinalBuild(id);
 
-            await redis.hSet("status", id, "deploy");
+            await redis.hSet("status", id, "deployed");
 
             await sqs
               .deleteMessage({

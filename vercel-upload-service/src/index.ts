@@ -27,11 +27,11 @@ if (!process.env.AWS_ELASTICACHE_URL) {
   throw new Error("AWS_ELASTICACHE_URL var missing");
 }
 
-const redis = createClient({
-  url: process.env.AWS_ELASTICACHE_URL,
-});
+const publisher = createClient();
+publisher.connect();
 
-redis.connect();
+const subscriber = createClient();
+subscriber.connect();
 
 const sqs = new SQS({
   accessKeyId: process.env.AWS_SQS_ACCESS_KEY_ID,
@@ -67,13 +67,19 @@ app.post("/deploy", async (req, res) => {
     })
     .promise();
 
-  await redis.hSet("status", id, "uploaded");
+  await publisher.hSet("status", id, "uploaded");
 
   res.json({
     id,
   });
 });
 
-app.get("/status");
+app.get("/status", async (req, res) => {
+  const id = req.query.id as string;
+  const response = await subscriber.hGet("status", id);
+  res.json({
+    status: response,
+  });
+});
 
 app.listen(3000);
