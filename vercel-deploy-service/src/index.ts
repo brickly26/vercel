@@ -1,6 +1,6 @@
 import { SQS } from "aws-sdk";
 import dotenv from "dotenv";
-import { downloadS3Folder } from "./aws";
+import { downloadS3Folder, uploadFinalBuild } from "./aws";
 import { buildProject } from "./utils";
 
 dotenv.config();
@@ -42,6 +42,7 @@ async function main() {
 
             await downloadS3Folder(`output/${id}`);
             await buildProject(id);
+            await uploadFinalBuild(id);
 
             await sqs
               .deleteMessage({
